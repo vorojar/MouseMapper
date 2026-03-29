@@ -10,7 +10,8 @@ final class MouseEventTap {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
 
-    static var heldKeys: [Int: KeyMapping] = [:]
+    /// hold 模式下当前按住的键（支持组合键）
+    static var heldKeys: [Int: [KeyMapping]] = [:]
 
     init(config: Config) {
         self.config = config
@@ -70,6 +71,18 @@ private class ConfigBox {
     init(_ config: Config) { self.config = config }
 }
 
+/// 解析键名（支持 "shift+command+a" 组合键）
+private func resolveKeys(_ keyString: String) -> [KeyMapping]? {
+    let parts = keyString.lowercased().split(separator: "+").map(String.init)
+    var mappings: [KeyMapping] = []
+    for part in parts {
+        let trimmed = part.trimmingCharacters(in: .whitespaces)
+        guard let km = keyTable[trimmed] else { return nil }
+        mappings.append(km)
+    }
+    return mappings.isEmpty ? nil : mappings
+}
+
 // MARK: - CGEvent 回调
 
 private func mouseCallback(
@@ -94,7 +107,7 @@ private func mouseCallback(
         return Unmanaged.passUnretained(event)
     }
 
-    guard let keyMapping = keyTable[mapping.key.lowercased()] else {
+    guard let keyMappings = resolveKeys(mapping.key) else {
         return Unmanaged.passUnretained(event)
     }
 
@@ -103,19 +116,19 @@ private func mouseCallback(
     switch mapping.resolvedAction {
     case .hold:
         if isDown {
-            sendKeyEvent(keyMapping: keyMapping, keyDown: true)
-            MouseEventTap.heldKeys[buttonNumber] = keyMapping
+            for km in keyMappings { sendKeyEvent(keyMapping: km, keyDown: true) }
+            MouseEventTap.heldKeys[buttonNumber] = keyMappings
         } else {
             if let held = MouseEventTap.heldKeys[buttonNumber] {
-                sendKeyEvent(keyMapping: held, keyDown: false)
+                for km in held.reversed() { sendKeyEvent(keyMapping: km, keyDown: false) }
                 MouseEventTap.heldKeys.removeValue(forKey: buttonNumber)
             }
         }
 
     case .click:
         if isDown {
-            sendKeyEvent(keyMapping: keyMapping, keyDown: true)
-            sendKeyEvent(keyMapping: keyMapping, keyDown: false)
+            for km in keyMappings { sendKeyEvent(keyMapping: km, keyDown: true) }
+            for km in keyMappings.reversed() { sendKeyEvent(keyMapping: km, keyDown: false) }
         }
     }
 
@@ -135,11 +148,8 @@ private func sendKeyEvent(keyMapping: KeyMapping, keyDown: Bool) {
     }
 }
 
-/// 修饰键模拟：IOKit 设置全局 flags + CGEvent 发送 keyCode
-/// IOKit 事件无合成标记(0x20000000)，可被系统级功能（如语音输入）识别
-/// CGEvent 事件携带 keyCode，供普通应用识别具体哪个修饰键
+/// 修饰键：IOKit 设置全局 flags + CGEvent 发送 keyCode
 private func postModifierEvent(keyCode: CGKeyCode, flags: CGEventFlags, keyDown: Bool) {
-    // IOKit: 设置全局修饰键状态
     var connect: io_connect_t = 0
     let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOHIDSystem"))
     if service != 0 {
@@ -154,7 +164,6 @@ private func postModifierEvent(keyCode: CGKeyCode, flags: CGEventFlags, keyDown:
         IOObjectRelease(service)
     }
 
-    // CGEvent: 发送带 keyCode 的 flagsChanged
     let source = CGEventSource(stateID: .hidSystemState)
     if let flagEvent = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: keyDown) {
         flagEvent.type = .flagsChanged

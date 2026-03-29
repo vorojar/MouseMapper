@@ -7,8 +7,8 @@
     },
     {
       "button": 4,
-      "key": "option",
-      "action": "hold"
+      "key": "shift+command",
+      "action": "click"
     }
   ]
 }
