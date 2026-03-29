@@ -44,6 +44,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+strip MouseMapper.exe
 del /q app.res 2>nul
 echo.
 echo [OK] Build success: MouseMapper.exe

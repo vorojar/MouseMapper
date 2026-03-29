@@ -11,7 +11,7 @@
 #define WM_TRAYICON    (WM_USER + 1)
 #define ID_TRAY        1
 #define IDM_AUTOSTART  2001
-#define IDM_UNINSTALL  2002
+#define IDM_GITHUB     2002
 #define IDM_EXIT       2003
 
 static const wchar_t *WNDCLASS_NAME = L"MouseMapperTray";
@@ -64,23 +64,12 @@ static void set_autostart(int enable)
     RegCloseKey(hKey);
 }
 
-static void delete_config(void)
-{
-    char path[MAX_PATH];
-    GetModuleFileNameA(NULL, path, MAX_PATH);
-    char *last = strrchr(path, '\\');
-    if (last) *(last + 1) = '\0';
-    strncat(path, "config.json", MAX_PATH - (int)strlen(path) - 1);
-    DeleteFileA(path);
-}
-
 /* ================================================================
  *  托盘图标
  * ================================================================ */
 
 static void tray_add(HWND hwnd)
 {
-
     ZeroMemory(&g_nid, sizeof(g_nid));
     g_nid.cbSize           = sizeof(NOTIFYICONDATAW);
     g_nid.hWnd             = hwnd;
@@ -92,7 +81,7 @@ static void tray_add(HWND hwnd)
     g_nid.dwInfoFlags      = NIIF_INFO;
     wcscpy(g_nid.szTip, L"MouseMapper");
     wcscpy(g_nid.szInfoTitle, L"MouseMapper");
-    wcscpy(g_nid.szInfo, L"鼠标映射已启动");
+    wcscpy(g_nid.szInfo, L"Mouse mapping is active");
     Shell_NotifyIconW(NIM_ADD, &g_nid);
 }
 
@@ -110,7 +99,7 @@ static void tray_show_menu(HWND hwnd)
     for (int i = 0; i < g_cfg.count; i++) {
         Mapping *m = &g_cfg.mappings[i];
         char buf[128];
-        const char *act = (m->action == ACTION_HOLD) ? "按住" : "点击";
+        const char *act = (m->action == ACTION_HOLD) ? "Hold" : "Click";
         snprintf(buf, sizeof(buf), "%s -> %s (%s)",
                  mouse_button_name(m->button), m->key, act);
         wchar_t wbuf[128];
@@ -121,10 +110,11 @@ static void tray_show_menu(HWND hwnd)
     AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
 
     AppendMenuW(hMenu, MF_STRING | (autoOn ? MF_CHECKED : 0),
-                IDM_AUTOSTART, L"开机自启");
+                IDM_AUTOSTART, L"Auto-start");
 
     AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-    AppendMenuW(hMenu, MF_STRING, IDM_EXIT, L"退出");
+    AppendMenuW(hMenu, MF_STRING, IDM_GITHUB, L"GitHub");
+    AppendMenuW(hMenu, MF_STRING, IDM_EXIT, L"Exit");
 
     POINT pt;
     GetCursorPos(&pt);
@@ -152,18 +142,8 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         case IDM_AUTOSTART:
             set_autostart(!is_autostart());
             break;
-        case IDM_UNINSTALL:
-            set_autostart(0);
-            delete_config();
-            hook_stop();
-            tray_remove();
-            MessageBoxW(NULL,
-                        L"已卸载 MouseMapper\n\n"
-                        L"- 已移除开机自启\n"
-                        L"- 已删除 config.json\n"
-                        L"- exe 文件请手动删除",
-                        L"MouseMapper", MB_OK | MB_ICONINFORMATION);
-            PostQuitMessage(0);
+        case IDM_GITHUB:
+            ShellExecuteW(NULL, L"open", L"https://github.com/vorojar/MouseMapper", NULL, NULL, SW_SHOWNORMAL);
             break;
         case IDM_EXIT:
             hook_stop();
@@ -194,7 +174,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmdLine, int nC
     /* 防止多开 */
     HANDLE hMutex = CreateMutexA(NULL, TRUE, "MouseMapperSingleInstance");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        MessageBoxW(NULL, L"MouseMapper 已在运行中", L"MouseMapper", MB_OK | MB_ICONINFORMATION);
+        MessageBoxW(NULL, L"MouseMapper is already running", L"MouseMapper", MB_OK | MB_ICONINFORMATION);
         return 0;
     }
 
@@ -207,7 +187,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmdLine, int nC
     /* 加载配置 */
     g_cfg = load_config();
     if (g_cfg.count == 0) {
-        MessageBoxW(NULL, L"没有配置任何映射", L"MouseMapper", MB_OK | MB_ICONWARNING);
+        MessageBoxW(NULL, L"No mappings configured", L"MouseMapper", MB_OK | MB_ICONWARNING);
         return 0;
     }
 
@@ -216,7 +196,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmdLine, int nC
 
     /* 启动鼠标钩子 */
     if (!hook_start_async(&g_cfg)) {
-        MessageBoxW(NULL, L"无法启动鼠标钩子", L"MouseMapper", MB_OK | MB_ICONERROR);
+        MessageBoxW(NULL, L"Failed to start mouse hook", L"MouseMapper", MB_OK | MB_ICONERROR);
         return 1;
     }
 

@@ -1,41 +1,43 @@
+[English](README.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Français](README_fr.md)
+
 # MouseMapper
 
-**把鼠标侧键映射为任意键盘按键。** 支持 macOS 和 Windows。
+**Map mouse side buttons to any keyboard key.** Supports macOS and Windows.
 
-## 为什么做这个
+## Why This Exists
 
-如果你用罗技或其他品牌的多键鼠标，你大概率遇到过这些问题：
+If you use a Logitech or other multi-button mouse, you've probably run into these problems:
 
-**Logitech Options+ 的痛点：**
-- 侧键只能映射"前进/后退"这类浏览器操作，**不能映射为任意键盘按键**
-- 想把侧键当 fn / Command / Alt 单独用？做不到
-- 想映射 `Ctrl+C` 这样的组合键？对不起，不支持
-- 软件本身 500MB+，开机自启吃内存，还有登录、同步、更新提示一堆烦人功能
-- macOS 上经常和系统冲突，更新后映射丢失
+**Pain points with Logitech Options+:**
+- Side buttons can only be mapped to browser actions like Forward/Back — **no arbitrary keyboard key mapping**
+- Want to use a side button as fn / Command / Alt on its own? Can't do it
+- Want to map `Ctrl+C` as a combo? Sorry, not supported
+- The software itself is 500MB+, auto-starts, eats memory, and nags you with login, sync, and update prompts
+- On macOS it frequently conflicts with the system, and mappings get lost after updates
 
-**其他替代工具：** 要么收费（BetterTouchTool），要么配置复杂（Karabiner），要么只支持单平台。
+**Other alternatives:** Either paid (BetterTouchTool), overly complex to configure (Karabiner), or single-platform only.
 
-**所以我做了 MouseMapper：**
-- 一个 exe / 一个二进制，双击即用，零依赖
-- 映射任意键盘按键，包括单独的修饰键（fn、Command/Win、Alt/Option、Shift、Ctrl）
-- 支持组合键（`ctrl+c`、`shift+alt`、`command+space` 等）
-- JSON 配置文件，一目了然，改完重启生效
-- 整个程序不到 500KB，不联网，不登录，不更新，不烦你
+**So I built MouseMapper:**
+- One exe / one binary, double-click to run, zero dependencies
+- Map any keyboard key, including standalone modifiers (fn, Command/Win, Alt/Option, Shift, Ctrl)
+- Key combos supported (`ctrl+c`, `shift+alt`, `command+space`, etc.)
+- JSON config file, dead simple, edit and restart to apply
+- Entire program under 500KB — no network, no login, no updates, no hassle
 
 ## Download
 
-**Windows:** [下载 MouseMapper.exe](https://github.com/vorojar/MouseMapper/releases) — 双击运行，自动后台托盘，自动开机启动。
+**Windows:** [Download MouseMapper.exe](https://github.com/vorojar/MouseMapper/releases) — Double-click to run, auto system tray, auto startup.
 
-**macOS:** 源码编译（见下方）。
+**macOS:** Build from source (see below).
 
-## 快速开始
+## Quick Start
 
 ### Windows
 
-1. 下载 `MouseMapper.exe`
-2. 双击运行 → 自动在 exe 目录生成 `config.json` → 自动设置开机自启
-3. 编辑 `config.json` 改映射，重启程序生效
-4. 右下角托盘图标右键 → 管理自启 / 退出
+1. Download `MouseMapper.exe`
+2. Double-click to run → auto-generates `config.json` in the exe directory → auto-sets startup
+3. Edit `config.json` to change mappings, restart the program to apply
+4. Right-click the tray icon in the bottom-right → manage startup / exit
 
 ### macOS
 
@@ -45,11 +47,11 @@ cd MouseMapper
 bash install.sh
 ```
 
-首次运行需授权：`系统设置 → 隐私与安全 → 辅助功能`。
+First run requires permission: `System Settings → Privacy & Security → Accessibility`.
 
-## 配置
+## Configuration
 
-两个平台共用同一套 `config.json` 格式：
+Both platforms share the same `config.json` format:
 
 ```json
 {
@@ -68,53 +70,53 @@ bash install.sh
 }
 ```
 
-| 字段 | 说明 |
-|------|------|
-| `button` | 鼠标按键编号：`2`=中键，`3`=侧键后，`4`=侧键前 |
-| `key` | 目标按键，支持 `+` 组合：`return`、`ctrl+c`、`shift+alt` |
-| `action` | `"click"`（默认）按一下触发 / `"hold"` 按住持续 |
+| Field | Description |
+|-------|-------------|
+| `button` | Mouse button number: `2`=middle, `3`=side back, `4`=side forward |
+| `key` | Target key, supports `+` combos: `return`, `ctrl+c`, `shift+alt` |
+| `action` | `"click"` (default) fires once / `"hold"` holds while pressed |
 
-### 支持的按键
+### Supported Keys
 
-**修饰键：** `shift`、`control`/`ctrl`、`alt`/`option`、`command`/`win`、`caps_lock`（均支持 `left_`/`right_` 变体）
+**Modifiers:** `shift`, `control`/`ctrl`, `alt`/`option`, `command`/`win`, `caps_lock` (all support `left_`/`right_` variants)
 
-**macOS 专属：** `fn`
+**macOS only:** `fn`
 
-**功能键：** `f1`-`f12`
+**Function keys:** `f1`-`f12`
 
-**常用键：** `escape`/`esc`、`return`/`enter`、`tab`、`space`、`backspace`/`delete`、`forward_delete`、`insert`
+**Common keys:** `escape`/`esc`, `return`/`enter`, `tab`, `space`, `backspace`/`delete`, `forward_delete`, `insert`
 
-**导航键：** `up`、`down`、`left`、`right`、`home`、`end`、`page_up`、`page_down`
+**Navigation:** `up`, `down`, `left`, `right`, `home`, `end`, `page_up`, `page_down`
 
-**字母/数字/符号：** `a`-`z`、`0`-`9`、`-`、`=`、`[`、`]`、`\`、`;`、`'`、`,`、`.`、`/`、`` ` ``
+**Letters/Numbers/Symbols:** `a`-`z`, `0`-`9`, `-`, `=`, `[`, `]`, `\`, `;`, `'`, `,`, `.`, `/`, `` ` ``
 
-## 使用场景
+## Use Cases
 
-- 侧键后 → `Enter`，拇指确认，写代码/聊天效率翻倍
-- 侧键前 → `Alt`（按住模式），配合鼠标拖拽 = 窗口移动
-- 中键 → `Escape`，随时取消操作
-- 侧键 → `Ctrl+C` / `Ctrl+V`，单手复制粘贴
-- 侧键 → `Command+Space`，一键呼出 Spotlight / 搜索
+- Side back → `Enter` — thumb confirm, doubles coding/chat efficiency
+- Side forward → `Alt` (hold mode) — combine with mouse drag = window move
+- Middle → `Escape` — instant cancel
+- Side button → `Ctrl+C` / `Ctrl+V` — one-hand copy/paste
+- Side button → `Command+Space` — instant Spotlight / search
 
-## 技术实现
+## Technical Details
 
 ### Windows
-- C + Win32 API，~960 行代码
-- `SetWindowsHookEx(WH_MOUSE_LL)` 全局钩子拦截
-- `SendInput` 异步工作线程模拟按键（避免 hook 超时）
-- 系统托盘图标 + 注册表开机自启
+- C + Win32 API, ~960 lines of code
+- `SetWindowsHookEx(WH_MOUSE_LL)` global hook interception
+- `SendInput` on async worker thread for key simulation (avoids hook timeout)
+- System tray icon + registry auto-start
 
 ### macOS
-- Swift，~500 行代码
-- `CGEventTap` 会话级事件拦截
-- 修饰键双通道：IOKit（系统级） + CGEvent（应用级），解决 macOS 合成事件被过滤的问题
-- launchd 开机自启
+- Swift, ~500 lines of code
+- `CGEventTap` session-level event interception
+- Dual-channel modifier keys: IOKit (system-level) + CGEvent (app-level), solving macOS synthetic event filtering
+- launchd auto-start
 
-## 构建
+## Build
 
 ### Windows
 
-需要 GCC (MinGW-w64)：
+Requires GCC (MinGW-w64):
 
 ```bash
 cd windows
@@ -123,7 +125,7 @@ build.bat
 
 ### macOS
 
-需要 Swift 5.9+：
+Requires Swift 5.9+:
 
 ```bash
 swift build -c release

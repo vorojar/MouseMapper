@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-/* shlobj.h 不再需要 */
 
 /* ================================================================
  *  键名 → VK 码映射表
@@ -264,7 +262,7 @@ static int parse_config_json(const char *json, Config *cfg)
 }
 
 /* ================================================================
- *  配置文件加载（三路径搜索）
+ *  配置文件加载（exe 同目录）
  * ================================================================ */
 
 static char *read_file(const char *path)
@@ -355,9 +353,9 @@ Config load_config(void)
 const char *mouse_button_name(int button)
 {
     switch (button) {
-        case 2:  return "中键(Middle)";
-        case 3:  return "侧键后(XButton1)";
-        case 4:  return "侧键前(XButton2)";
+        case 2:  return "Middle";
+        case 3:  return "Back(X1)";
+        case 4:  return "Forward(X2)";
         default: {
             static char buf[16];
             snprintf(buf, sizeof(buf), "Button%d", button);
