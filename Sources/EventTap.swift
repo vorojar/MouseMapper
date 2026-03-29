@@ -128,11 +128,14 @@ private func sendKeyEvent(keyMapping: KeyMapping, keyDown: Bool) {
     let source = CGEventSource(stateID: .hidSystemState)
 
     if keyMapping.isModifier {
-        // 修饰键：只发送 flagsChanged 事件
         if let flagEvent = CGEvent(keyboardEventSource: source, virtualKey: keyMapping.keyCode, keyDown: keyDown) {
             flagEvent.type = .flagsChanged
             flagEvent.flags = keyDown ? keyMapping.flags : []
             flagEvent.post(tap: .cghidEventTap)
+        }
+        if let keyEvent = CGEvent(keyboardEventSource: source, virtualKey: keyMapping.keyCode, keyDown: keyDown) {
+            keyEvent.flags = keyDown ? keyMapping.flags : []
+            keyEvent.post(tap: .cghidEventTap)
         }
     } else {
         // 普通键：发送 keyDown/keyUp 事件

@@ -2,13 +2,13 @@
   "mappings": [
     {
       "button": 3,
-      "key": "left_command",
-      "action": "hold"
+      "key": "return",
+      "action": "click"
     },
     {
       "button": 4,
-      "key": "return",
-      "action": "click"
+      "key": "option",
+      "action": "hold"
     }
   ]
 }
