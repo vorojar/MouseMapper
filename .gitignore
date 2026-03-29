@@ -3,3 +3,9 @@
 *.xcodeproj/
 *.xcworkspace/
 .DS_Store
+
+# Windows
+windows/*.exe
+windows/*.obj
+windows/*.res
+windows/config.json
