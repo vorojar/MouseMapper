@@ -156,7 +156,7 @@ func loadConfig() -> Config {
 
     print("✗ 未找到配置文件，使用默认配置（侧键后=Command, 侧键前=回车）")
     return Config(mappings: [
-        Mapping(button: 4, key: "left_command", action: "hold"),
-        Mapping(button: 5, key: "return", action: "click"),
+        Mapping(button: 3, key: "left_command", action: "hold"),
+        Mapping(button: 4, key: "return", action: "click"),
     ])
 }

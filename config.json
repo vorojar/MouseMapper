@@ -1,12 +1,12 @@
 {
   "mappings": [
     {
-      "button": 4,
+      "button": 3,
       "key": "left_command",
       "action": "hold"
     },
     {
-      "button": 5,
+      "button": 4,
       "key": "return",
       "action": "click"
     }

@@ -58,9 +58,9 @@ final class MouseEventTap {
 
     private func mouseButtonName(_ button: Int) -> String {
         switch button {
-        case 3: return "中键"
-        case 4: return "侧键后(Button4)"
-        case 5: return "侧键前(Button5)"
+        case 2: return "中键"
+        case 3: return "侧键后(Button3)"
+        case 4: return "侧键前(Button4)"
         default: return "Button\(button)"
         }
     }
