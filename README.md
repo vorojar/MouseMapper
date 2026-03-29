@@ -1,45 +1,35 @@
 # MouseMapper
 
-A lightweight macOS tool that remaps mouse side buttons to any keyboard key, including modifier keys like fn, Command, Option, and key combinations like `Shift+Command`.
+A lightweight tool that remaps mouse side buttons to any keyboard key, including modifier keys and key combinations.
 
-Built as a minimal alternative to Logitech Options+ — no GUI, no bloat, just a config file and a background process.
+Built as a minimal alternative to Logitech Options+ — no GUI bloat, just a config file and a background process.
+
+Supports **macOS** and **Windows**.
 
 ## Why
 
-- Logitech Options+ is heavy and can't map side buttons to standalone modifier keys (fn, Command, etc.)
-- macOS has no built-in mouse button remapping
+- Logitech Options+ is heavy and can't map side buttons to standalone modifier keys
+- Neither macOS nor Windows has built-in mouse button remapping
 - Existing tools are either paid or overly complex
 
 ## Features
 
-- Remap any mouse button (side buttons, middle click, etc.) to any keyboard key
-- **Standalone modifier keys** — map to fn, Command, Option, Shift, Control alone
-- **Key combinations** — `shift+command`, `command+c`, `control+shift+a`, etc.
-- **Hold mode** — hold mouse button = hold keyboard key (e.g., hold side button for Option)
+- Remap any mouse button (side buttons, middle click) to any keyboard key
+- **Standalone modifier keys** — map to fn, Command/Win, Option/Alt, Shift, Control
+- **Key combinations** — `shift+command`, `ctrl+c`, `control+shift+a`, etc.
+- **Hold mode** — hold mouse button = hold keyboard key
 - **Click mode** — single mouse click triggers a key press
-- **System-level compatibility** — works with macOS voice input, Spotlight, and other system features (via IOKit + CGEvent dual-channel approach)
-- JSON config, zero dependencies, ~500 lines of Swift
+- JSON config, zero dependencies
 
-## Install
+## Download
 
-```bash
-git clone https://github.com/vorojar/MouseMapper.git
-cd MouseMapper
-bash install.sh
-```
+**Windows:** [Download MouseMapper.exe](https://github.com/vorojar/MouseMapper/releases) — double-click to run, no install needed.
 
-This compiles the binary, installs to `~/.local/bin/`, and sets up auto-start via launchd.
-
-**First run:** macOS will prompt you to grant Accessibility permission in `System Settings > Privacy & Security > Accessibility`.
+**macOS:** Build from source (see below).
 
 ## Config
 
-Config file locations (checked in order):
-1. Current working directory: `./config.json`
-2. Next to the binary
-3. `~/.config/mousemapper/config.json`
-
-### Example
+Both platforms share the same `config.json` format:
 
 ```json
 {
@@ -51,7 +41,7 @@ Config file locations (checked in order):
     },
     {
       "button": 4,
-      "key": "option",
+      "key": "alt",
       "action": "hold"
     }
   ]
@@ -62,54 +52,74 @@ Config file locations (checked in order):
 
 | Field | Description |
 |-------|-------------|
-| `button` | Mouse button number. `2`=middle, `3`=side back, `4`=side front. Run with unknown buttons to see their numbers in the log. |
-| `key` | Target key. Single key or `+`-separated combo: `command`, `shift+command`, `control+z` |
-| `action` | `"click"` = one press per click (default). `"hold"` = key held while mouse button held. |
+| `button` | Mouse button number. `2`=middle, `3`=side back, `4`=side front |
+| `key` | Target key or `+`-separated combo: `shift+command`, `ctrl+c` |
+| `action` | `"click"` (default) or `"hold"` |
 
 ### Available keys
 
-**Modifiers:** `fn`, `command`/`left_command`/`right_command`, `shift`/`left_shift`/`right_shift`, `option`/`left_option`/`right_option`, `control`/`left_control`/`right_control`, `caps_lock`
+**Modifiers:** `shift`, `control`/`ctrl`, `alt`/`option`, `command`/`win`, `caps_lock` (with `left_`/`right_` variants)
+
+**macOS only:** `fn`
 
 **Function keys:** `f1`-`f12`
 
-**Common:** `escape`, `return`, `tab`, `space`, `delete`, `forward_delete`
+**Common:** `escape`/`esc`, `return`/`enter`, `tab`, `space`, `backspace`/`delete`, `forward_delete`, `insert`
 
-**Arrows:** `up`, `down`, `left`, `right`, `home`, `end`, `page_up`, `page_down`
+**Navigation:** `up`, `down`, `left`, `right`, `home`, `end`, `page_up`, `page_down`
 
 **Letters/digits/symbols:** `a`-`z`, `0`-`9`, `-`, `=`, `[`, `]`, `\`, `;`, `'`, `,`, `.`, `/`, `` ` ``
 
-## Usage
+## Windows
+
+Single exe, zero dependencies (~400KB).
+
+- **Double-click** → auto-starts mapping + sets auto-start on boot
+- **System tray** → right-click icon to toggle auto-start or exit
+- **Config** → auto-generated at exe directory on first run
+
+### Build from source
+
+Requires GCC (MinGW-w64):
 
 ```bash
-# Run directly
-swift run
-
-# Or after install
-mousemapper
-
-# Manage the background service
-launchctl unload ~/Library/LaunchAgents/com.local.mousemapper.plist  # stop
-launchctl load ~/Library/LaunchAgents/com.local.mousemapper.plist    # start
-
-# Uninstall
-bash uninstall.sh
+cd windows
+build.bat
 ```
 
-## How it works
+## macOS
+
+~500 lines of Swift. Uses CGEventTap + IOKit dual-channel approach for system-level modifier key compatibility.
+
+### Install
+
+```bash
+git clone https://github.com/vorojar/MouseMapper.git
+cd MouseMapper
+bash install.sh
+```
+
+**First run:** Grant Accessibility permission in `System Settings > Privacy & Security > Accessibility`.
+
+### Usage
+
+```bash
+swift run                # run directly
+bash install.sh          # install + auto-start via launchd
+bash uninstall.sh        # uninstall
+```
+
+### How it works
 
 1. **CGEventTap** intercepts mouse button events at the session level
-2. For regular keys: sends standard `keyDown`/`keyUp` via CGEvent
-3. For modifier keys: uses a **dual-channel approach**
-   - **IOKit** sets the global modifier flags (no synthetic event marker, recognized by system features like voice input)
-   - **CGEvent** sends `flagsChanged` with the correct keyCode (recognized by applications)
+2. For regular keys: sends `keyDown`/`keyUp` via CGEvent
+3. For modifier keys: **dual-channel approach**
+   - **IOKit** sets global modifier flags (recognized by system features like voice input)
+   - **CGEvent** sends `flagsChanged` with keyCode (recognized by applications)
 
-This dual approach solves a macOS quirk where CGEvent-only synthetic modifier events carry a `0x20000000` flag that system-level features (like voice input) use to filter out fake key presses.
+### Requirements
 
-## Requirements
-
-- macOS 13+
-- Swift 5.9+
-- Accessibility permission
+- macOS 13+, Swift 5.9+, Accessibility permission
 
 ## License
 
