@@ -130,16 +130,14 @@ let keyTable: [String: KeyMapping] = {
 // MARK: - 配置加载
 
 func loadConfig() -> Config {
-    let configPaths = [
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".config/mousemapper/config.json").path,
-        Bundle.main.bundlePath + "/../config.json",
-    ]
+    // 按优先级查找配置文件：当前工作目录 → 可执行文件同目录 → ~/.config
+    let cwd = FileManager.default.currentDirectoryPath + "/config.json"
+    let execDir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
+        .appendingPathComponent("config.json").path
+    let userConfig = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent(".config/mousemapper/config.json").path
 
-    // 找当前可执行文件同目录的 config.json
-    let execURL = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
-    let execConfig = execURL.appendingPathComponent("config.json").path
-    let allPaths = [execConfig] + configPaths
+    let allPaths = [cwd, execDir, userConfig]
 
     for path in allPaths {
         if FileManager.default.fileExists(atPath: path),
