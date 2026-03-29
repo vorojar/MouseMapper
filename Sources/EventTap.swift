@@ -1,5 +1,7 @@
 import CoreGraphics
 import Foundation
+import IOKit
+import IOKit.hid
 
 // MARK: - 鼠标事件拦截器
 
@@ -8,7 +10,6 @@ final class MouseEventTap {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
 
-    /// 当前被按住的映射键（用于 hold 模式松开时释放）
     static var heldKeys: [Int: KeyMapping] = [:]
 
     init(config: Config) {
@@ -16,17 +17,17 @@ final class MouseEventTap {
     }
 
     func start() {
-        let eventMask: CGEventMask =
+        let mouseMask: CGEventMask =
             (1 << CGEventType.otherMouseDown.rawValue) |
             (1 << CGEventType.otherMouseUp.rawValue)
 
         let configPtr = Unmanaged.passRetained(ConfigBox(config)).toOpaque()
 
-        guard let tap = CGEvent.tapCreate(
+        guard let mouseTap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
-            eventsOfInterest: eventMask,
+            eventsOfInterest: mouseMask,
             callback: mouseCallback,
             userInfo: configPtr
         ) else {
@@ -34,10 +35,10 @@ final class MouseEventTap {
             exit(1)
         }
 
-        eventTap = tap
-        runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        eventTap = mouseTap
+        runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, mouseTap, 0)
         CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        CGEvent.tapEnable(tap: mouseTap, enable: true)
 
         print("✓ 事件监听已启动")
         printMappings()
@@ -94,7 +95,6 @@ private func mouseCallback(
     }
 
     guard let keyMapping = keyTable[mapping.key.lowercased()] else {
-        print("⚠ 未知键名: \(mapping.key)")
         return Unmanaged.passUnretained(event)
     }
 
@@ -119,28 +119,46 @@ private func mouseCallback(
         }
     }
 
-    return nil  // 吞掉原始鼠标事件
+    return nil
 }
 
 // MARK: - 模拟键盘事件
 
 private func sendKeyEvent(keyMapping: KeyMapping, keyDown: Bool) {
-    let source = CGEventSource(stateID: .hidSystemState)
-
     if keyMapping.isModifier {
-        if let flagEvent = CGEvent(keyboardEventSource: source, virtualKey: keyMapping.keyCode, keyDown: keyDown) {
-            flagEvent.type = .flagsChanged
-            flagEvent.flags = keyDown ? keyMapping.flags : []
-            flagEvent.post(tap: .cghidEventTap)
-        }
-        if let keyEvent = CGEvent(keyboardEventSource: source, virtualKey: keyMapping.keyCode, keyDown: keyDown) {
-            keyEvent.flags = keyDown ? keyMapping.flags : []
-            keyEvent.post(tap: .cghidEventTap)
-        }
+        postModifierEvent(keyCode: keyMapping.keyCode, flags: keyMapping.flags, keyDown: keyDown)
     } else {
-        // 普通键：发送 keyDown/keyUp 事件
+        let source = CGEventSource(stateID: .hidSystemState)
         if let keyEvent = CGEvent(keyboardEventSource: source, virtualKey: keyMapping.keyCode, keyDown: keyDown) {
             keyEvent.post(tap: .cghidEventTap)
         }
+    }
+}
+
+/// 修饰键模拟：IOKit 设置全局 flags + CGEvent 发送 keyCode
+/// IOKit 事件无合成标记(0x20000000)，可被系统级功能（如语音输入）识别
+/// CGEvent 事件携带 keyCode，供普通应用识别具体哪个修饰键
+private func postModifierEvent(keyCode: CGKeyCode, flags: CGEventFlags, keyDown: Bool) {
+    // IOKit: 设置全局修饰键状态
+    var connect: io_connect_t = 0
+    let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOHIDSystem"))
+    if service != 0 {
+        if IOServiceOpen(service, mach_task_self_, UInt32(kIOHIDParamConnectType), &connect) == KERN_SUCCESS {
+            var event = NXEventData()
+            let pressFlags = UInt32(flags.rawValue & 0x00FFFFFF) | 0x100
+            let postFlags: UInt32 = keyDown ? pressFlags : 0x100
+            IOHIDPostEvent(connect, UInt32(NX_FLAGSCHANGED), IOGPoint(x: 0, y: 0), &event,
+                          UInt32(kNXEventDataVersion), IOOptionBits(postFlags), IOOptionBits(kIOHIDSetGlobalEventFlags))
+            IOServiceClose(connect)
+        }
+        IOObjectRelease(service)
+    }
+
+    // CGEvent: 发送带 keyCode 的 flagsChanged
+    let source = CGEventSource(stateID: .hidSystemState)
+    if let flagEvent = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: keyDown) {
+        flagEvent.type = .flagsChanged
+        flagEvent.flags = keyDown ? CGEventFlags(rawValue: flags.rawValue | 0x100) : CGEventFlags(rawValue: 0x100)
+        flagEvent.post(tap: .cghidEventTap)
     }
 }

@@ -36,21 +36,21 @@ struct KeyMapping {
 let keyTable: [String: KeyMapping] = {
     var table: [String: KeyMapping] = [:]
 
-    // 修饰键 — 只发送 flagsChanged 事件
-    table["fn"]             = KeyMapping(keyCode: 0x3F, flags: .maskSecondaryFn, isModifier: true)
-    table["left_command"]   = KeyMapping(keyCode: 0x37, flags: .maskCommand, isModifier: true)
-    table["right_command"]  = KeyMapping(keyCode: 0x36, flags: .maskCommand, isModifier: true)
-    table["command"]        = KeyMapping(keyCode: 0x37, flags: .maskCommand, isModifier: true)
-    table["left_shift"]     = KeyMapping(keyCode: 0x38, flags: .maskShift, isModifier: true)
-    table["right_shift"]    = KeyMapping(keyCode: 0x3C, flags: .maskShift, isModifier: true)
-    table["shift"]          = KeyMapping(keyCode: 0x38, flags: .maskShift, isModifier: true)
-    table["left_option"]    = KeyMapping(keyCode: 0x3A, flags: .maskAlternate, isModifier: true)
-    table["right_option"]   = KeyMapping(keyCode: 0x3D, flags: .maskAlternate, isModifier: true)
-    table["option"]         = KeyMapping(keyCode: 0x3A, flags: .maskAlternate, isModifier: true)
-    table["left_control"]   = KeyMapping(keyCode: 0x3B, flags: .maskControl, isModifier: true)
-    table["right_control"]  = KeyMapping(keyCode: 0x3E, flags: .maskControl, isModifier: true)
-    table["control"]        = KeyMapping(keyCode: 0x3B, flags: .maskControl, isModifier: true)
-    table["caps_lock"]      = KeyMapping(keyCode: 0x39, flags: .maskAlphaShift, isModifier: true)
+    // 修饰键 — flags 包含设备级标志位 + nonCoalesced(0x100) 以匹配真实键盘事件
+    table["fn"]             = KeyMapping(keyCode: 0x3F, flags: CGEventFlags(rawValue: 0x800100), isModifier: true)
+    table["left_command"]   = KeyMapping(keyCode: 0x37, flags: CGEventFlags(rawValue: 0x100108), isModifier: true)
+    table["right_command"]  = KeyMapping(keyCode: 0x36, flags: CGEventFlags(rawValue: 0x100110), isModifier: true)
+    table["command"]        = KeyMapping(keyCode: 0x37, flags: CGEventFlags(rawValue: 0x100108), isModifier: true)
+    table["left_shift"]     = KeyMapping(keyCode: 0x38, flags: CGEventFlags(rawValue: 0x020102), isModifier: true)
+    table["right_shift"]    = KeyMapping(keyCode: 0x3C, flags: CGEventFlags(rawValue: 0x020104), isModifier: true)
+    table["shift"]          = KeyMapping(keyCode: 0x38, flags: CGEventFlags(rawValue: 0x020102), isModifier: true)
+    table["left_option"]    = KeyMapping(keyCode: 0x3A, flags: CGEventFlags(rawValue: 0x080120), isModifier: true)
+    table["right_option"]   = KeyMapping(keyCode: 0x3D, flags: CGEventFlags(rawValue: 0x080140), isModifier: true)
+    table["option"]         = KeyMapping(keyCode: 0x3A, flags: CGEventFlags(rawValue: 0x080120), isModifier: true)
+    table["left_control"]   = KeyMapping(keyCode: 0x3B, flags: CGEventFlags(rawValue: 0x040101), isModifier: true)
+    table["right_control"]  = KeyMapping(keyCode: 0x3E, flags: CGEventFlags(rawValue: 0x040101), isModifier: true)
+    table["control"]        = KeyMapping(keyCode: 0x3B, flags: CGEventFlags(rawValue: 0x040101), isModifier: true)
+    table["caps_lock"]      = KeyMapping(keyCode: 0x39, flags: CGEventFlags(rawValue: 0x010100), isModifier: true)
 
     // 功能键
     table["f1"]  = KeyMapping(keyCode: 0x7A, flags: [], isModifier: false)
