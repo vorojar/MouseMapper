@@ -16,12 +16,10 @@ final class MouseEventTap {
     }
 
     func start() {
-        // 监听所有鼠标按键事件（otherMouse = 非左右键，即侧键/中键）
         let eventMask: CGEventMask =
             (1 << CGEventType.otherMouseDown.rawValue) |
             (1 << CGEventType.otherMouseUp.rawValue)
 
-        // 将 config 传入回调（通过 userInfo 指针）
         let configPtr = Unmanaged.passRetained(ConfigBox(config)).toOpaque()
 
         guard let tap = CGEvent.tapCreate(
@@ -66,13 +64,12 @@ final class MouseEventTap {
     }
 }
 
-// 用于通过 userInfo 指针传递配置
 private class ConfigBox {
     let config: Config
     init(_ config: Config) { self.config = config }
 }
 
-// MARK: - CGEvent 回调（C 函数指针）
+// MARK: - CGEvent 回调
 
 private func mouseCallback(
     proxy: CGEventTapProxy,
@@ -81,7 +78,6 @@ private func mouseCallback(
     userInfo: UnsafeMutableRawPointer?
 ) -> Unmanaged<CGEvent>? {
 
-    // 事件tap被系统禁用时重新启用
     if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
         return Unmanaged.passUnretained(event)
     }
@@ -93,9 +89,8 @@ private func mouseCallback(
     let configBox = Unmanaged<ConfigBox>.fromOpaque(userInfo).takeUnretainedValue()
     let buttonNumber = Int(event.getIntegerValueField(.mouseEventButtonNumber))
 
-    // 查找匹配的映射
     guard let mapping = configBox.config.mappings.first(where: { $0.button == buttonNumber }) else {
-        return Unmanaged.passUnretained(event)  // 无映射，放行原始事件
+        return Unmanaged.passUnretained(event)
     }
 
     guard let keyMapping = keyTable[mapping.key.lowercased()] else {
@@ -132,22 +127,17 @@ private func mouseCallback(
 private func sendKeyEvent(keyMapping: KeyMapping, keyDown: Bool) {
     let source = CGEventSource(stateID: .hidSystemState)
 
-    if let keyCode = keyMapping.keyCode {
-        // 发送键盘事件
-        if let keyEvent = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: keyDown) {
-            if keyMapping.flags != [] {
-                keyEvent.flags = keyDown ? keyMapping.flags : []
-            }
-            keyEvent.post(tap: .cghidEventTap)
-        }
-    }
-
-    // 对于修饰键，额外发送 flagsChanged 事件确保系统识别
-    if keyMapping.flags != [], let keyCode = keyMapping.keyCode {
-        if let flagEvent = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: keyDown) {
+    if keyMapping.isModifier {
+        // 修饰键：只发送 flagsChanged 事件
+        if let flagEvent = CGEvent(keyboardEventSource: source, virtualKey: keyMapping.keyCode, keyDown: keyDown) {
             flagEvent.type = .flagsChanged
             flagEvent.flags = keyDown ? keyMapping.flags : []
             flagEvent.post(tap: .cghidEventTap)
+        }
+    } else {
+        // 普通键：发送 keyDown/keyUp 事件
+        if let keyEvent = CGEvent(keyboardEventSource: source, virtualKey: keyMapping.keyCode, keyDown: keyDown) {
+            keyEvent.post(tap: .cghidEventTap)
         }
     }
 }

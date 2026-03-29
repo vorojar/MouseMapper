@@ -8,9 +8,9 @@ struct Config: Codable {
 }
 
 struct Mapping: Codable {
-    let button: Int        // 鼠标按键编号: 3=中键, 4=侧键后, 5=侧键前
-    let key: String        // 映射目标键名
-    let action: String?    // "click"(默认) 或 "hold"（按住鼠标=按住键）
+    let button: Int
+    let key: String
+    let action: String?
 
     var resolvedAction: ActionType {
         switch action?.lowercased() {
@@ -21,73 +21,68 @@ struct Mapping: Codable {
 }
 
 enum ActionType {
-    case click  // 鼠标按下时触发一次按键
-    case hold   // 鼠标按住期间持续按住键
+    case click
+    case hold
 }
 
 // MARK: - 键码映射表
 
-/// 将配置文件中的键名解析为 (CGKeyCode, CGEventFlags)
-/// 修饰键只需要 flags，普通键需要 keyCode
 struct KeyMapping {
-    let keyCode: CGKeyCode?
+    let keyCode: CGKeyCode
     let flags: CGEventFlags
-
-    /// 是否为纯修饰键（fn, command, shift 等）
-    var isModifierOnly: Bool { keyCode == nil }
+    let isModifier: Bool
 }
 
 let keyTable: [String: KeyMapping] = {
     var table: [String: KeyMapping] = [:]
 
-    // 修饰键 — 模拟时需要同时发送对应的 keyCode
-    table["fn"]             = KeyMapping(keyCode: 0x3F, flags: .maskSecondaryFn)
-    table["left_command"]   = KeyMapping(keyCode: 0x37, flags: .maskCommand)
-    table["right_command"]  = KeyMapping(keyCode: 0x36, flags: .maskCommand)
-    table["command"]        = KeyMapping(keyCode: 0x37, flags: .maskCommand)
-    table["left_shift"]     = KeyMapping(keyCode: 0x38, flags: .maskShift)
-    table["right_shift"]    = KeyMapping(keyCode: 0x3C, flags: .maskShift)
-    table["shift"]          = KeyMapping(keyCode: 0x38, flags: .maskShift)
-    table["left_option"]    = KeyMapping(keyCode: 0x3A, flags: .maskAlternate)
-    table["right_option"]   = KeyMapping(keyCode: 0x3D, flags: .maskAlternate)
-    table["option"]         = KeyMapping(keyCode: 0x3A, flags: .maskAlternate)
-    table["left_control"]   = KeyMapping(keyCode: 0x3B, flags: .maskControl)
-    table["right_control"]  = KeyMapping(keyCode: 0x3E, flags: .maskControl)
-    table["control"]        = KeyMapping(keyCode: 0x3B, flags: .maskControl)
-    table["caps_lock"]      = KeyMapping(keyCode: 0x39, flags: .maskAlphaShift)
+    // 修饰键 — 只发送 flagsChanged 事件
+    table["fn"]             = KeyMapping(keyCode: 0x3F, flags: .maskSecondaryFn, isModifier: true)
+    table["left_command"]   = KeyMapping(keyCode: 0x37, flags: .maskCommand, isModifier: true)
+    table["right_command"]  = KeyMapping(keyCode: 0x36, flags: .maskCommand, isModifier: true)
+    table["command"]        = KeyMapping(keyCode: 0x37, flags: .maskCommand, isModifier: true)
+    table["left_shift"]     = KeyMapping(keyCode: 0x38, flags: .maskShift, isModifier: true)
+    table["right_shift"]    = KeyMapping(keyCode: 0x3C, flags: .maskShift, isModifier: true)
+    table["shift"]          = KeyMapping(keyCode: 0x38, flags: .maskShift, isModifier: true)
+    table["left_option"]    = KeyMapping(keyCode: 0x3A, flags: .maskAlternate, isModifier: true)
+    table["right_option"]   = KeyMapping(keyCode: 0x3D, flags: .maskAlternate, isModifier: true)
+    table["option"]         = KeyMapping(keyCode: 0x3A, flags: .maskAlternate, isModifier: true)
+    table["left_control"]   = KeyMapping(keyCode: 0x3B, flags: .maskControl, isModifier: true)
+    table["right_control"]  = KeyMapping(keyCode: 0x3E, flags: .maskControl, isModifier: true)
+    table["control"]        = KeyMapping(keyCode: 0x3B, flags: .maskControl, isModifier: true)
+    table["caps_lock"]      = KeyMapping(keyCode: 0x39, flags: .maskAlphaShift, isModifier: true)
 
     // 功能键
-    table["f1"]  = KeyMapping(keyCode: 0x7A, flags: [])
-    table["f2"]  = KeyMapping(keyCode: 0x78, flags: [])
-    table["f3"]  = KeyMapping(keyCode: 0x63, flags: [])
-    table["f4"]  = KeyMapping(keyCode: 0x76, flags: [])
-    table["f5"]  = KeyMapping(keyCode: 0x60, flags: [])
-    table["f6"]  = KeyMapping(keyCode: 0x61, flags: [])
-    table["f7"]  = KeyMapping(keyCode: 0x62, flags: [])
-    table["f8"]  = KeyMapping(keyCode: 0x64, flags: [])
-    table["f9"]  = KeyMapping(keyCode: 0x65, flags: [])
-    table["f10"] = KeyMapping(keyCode: 0x6D, flags: [])
-    table["f11"] = KeyMapping(keyCode: 0x67, flags: [])
-    table["f12"] = KeyMapping(keyCode: 0x6F, flags: [])
+    table["f1"]  = KeyMapping(keyCode: 0x7A, flags: [], isModifier: false)
+    table["f2"]  = KeyMapping(keyCode: 0x78, flags: [], isModifier: false)
+    table["f3"]  = KeyMapping(keyCode: 0x63, flags: [], isModifier: false)
+    table["f4"]  = KeyMapping(keyCode: 0x76, flags: [], isModifier: false)
+    table["f5"]  = KeyMapping(keyCode: 0x60, flags: [], isModifier: false)
+    table["f6"]  = KeyMapping(keyCode: 0x61, flags: [], isModifier: false)
+    table["f7"]  = KeyMapping(keyCode: 0x62, flags: [], isModifier: false)
+    table["f8"]  = KeyMapping(keyCode: 0x64, flags: [], isModifier: false)
+    table["f9"]  = KeyMapping(keyCode: 0x65, flags: [], isModifier: false)
+    table["f10"] = KeyMapping(keyCode: 0x6D, flags: [], isModifier: false)
+    table["f11"] = KeyMapping(keyCode: 0x67, flags: [], isModifier: false)
+    table["f12"] = KeyMapping(keyCode: 0x6F, flags: [], isModifier: false)
 
     // 常用键
-    table["escape"]      = KeyMapping(keyCode: 0x35, flags: [])
-    table["return"]      = KeyMapping(keyCode: 0x24, flags: [])
-    table["tab"]         = KeyMapping(keyCode: 0x30, flags: [])
-    table["space"]       = KeyMapping(keyCode: 0x31, flags: [])
-    table["delete"]      = KeyMapping(keyCode: 0x33, flags: [])
-    table["forward_delete"] = KeyMapping(keyCode: 0x75, flags: [])
+    table["escape"]         = KeyMapping(keyCode: 0x35, flags: [], isModifier: false)
+    table["return"]         = KeyMapping(keyCode: 0x24, flags: [], isModifier: false)
+    table["tab"]            = KeyMapping(keyCode: 0x30, flags: [], isModifier: false)
+    table["space"]          = KeyMapping(keyCode: 0x31, flags: [], isModifier: false)
+    table["delete"]         = KeyMapping(keyCode: 0x33, flags: [], isModifier: false)
+    table["forward_delete"] = KeyMapping(keyCode: 0x75, flags: [], isModifier: false)
 
     // 方向键
-    table["up"]    = KeyMapping(keyCode: 0x7E, flags: [])
-    table["down"]  = KeyMapping(keyCode: 0x7D, flags: [])
-    table["left"]  = KeyMapping(keyCode: 0x7B, flags: [])
-    table["right"] = KeyMapping(keyCode: 0x7C, flags: [])
-
-    table["home"]      = KeyMapping(keyCode: 0x73, flags: [])
-    table["end"]       = KeyMapping(keyCode: 0x77, flags: [])
-    table["page_up"]   = KeyMapping(keyCode: 0x74, flags: [])
-    table["page_down"] = KeyMapping(keyCode: 0x79, flags: [])
+    table["up"]        = KeyMapping(keyCode: 0x7E, flags: [], isModifier: false)
+    table["down"]      = KeyMapping(keyCode: 0x7D, flags: [], isModifier: false)
+    table["left"]      = KeyMapping(keyCode: 0x7B, flags: [], isModifier: false)
+    table["right"]     = KeyMapping(keyCode: 0x7C, flags: [], isModifier: false)
+    table["home"]      = KeyMapping(keyCode: 0x73, flags: [], isModifier: false)
+    table["end"]       = KeyMapping(keyCode: 0x77, flags: [], isModifier: false)
+    table["page_up"]   = KeyMapping(keyCode: 0x74, flags: [], isModifier: false)
+    table["page_down"] = KeyMapping(keyCode: 0x79, flags: [], isModifier: false)
 
     // 字母键 a-z
     let letters: [(String, CGKeyCode)] = [
@@ -99,7 +94,7 @@ let keyTable: [String: KeyMapping] = {
         ("z", 0x06),
     ]
     for (name, code) in letters {
-        table[name] = KeyMapping(keyCode: code, flags: [])
+        table[name] = KeyMapping(keyCode: code, flags: [], isModifier: false)
     }
 
     // 数字键 0-9
@@ -108,21 +103,21 @@ let keyTable: [String: KeyMapping] = {
         ("5", 0x17), ("6", 0x16), ("7", 0x1A), ("8", 0x1C), ("9", 0x19),
     ]
     for (name, code) in digits {
-        table[name] = KeyMapping(keyCode: code, flags: [])
+        table[name] = KeyMapping(keyCode: code, flags: [], isModifier: false)
     }
 
     // 符号键
-    table["-"]  = KeyMapping(keyCode: 0x1B, flags: [])
-    table["="]  = KeyMapping(keyCode: 0x18, flags: [])
-    table["["]  = KeyMapping(keyCode: 0x21, flags: [])
-    table["]"]  = KeyMapping(keyCode: 0x1E, flags: [])
-    table["\\"] = KeyMapping(keyCode: 0x2A, flags: [])
-    table[";"]  = KeyMapping(keyCode: 0x29, flags: [])
-    table["'"]  = KeyMapping(keyCode: 0x27, flags: [])
-    table[","]  = KeyMapping(keyCode: 0x2B, flags: [])
-    table["."]  = KeyMapping(keyCode: 0x2F, flags: [])
-    table["/"]  = KeyMapping(keyCode: 0x2C, flags: [])
-    table["`"]  = KeyMapping(keyCode: 0x32, flags: [])
+    table["-"]  = KeyMapping(keyCode: 0x1B, flags: [], isModifier: false)
+    table["="]  = KeyMapping(keyCode: 0x18, flags: [], isModifier: false)
+    table["["]  = KeyMapping(keyCode: 0x21, flags: [], isModifier: false)
+    table["]"]  = KeyMapping(keyCode: 0x1E, flags: [], isModifier: false)
+    table["\\"] = KeyMapping(keyCode: 0x2A, flags: [], isModifier: false)
+    table[";"]  = KeyMapping(keyCode: 0x29, flags: [], isModifier: false)
+    table["'"]  = KeyMapping(keyCode: 0x27, flags: [], isModifier: false)
+    table[","]  = KeyMapping(keyCode: 0x2B, flags: [], isModifier: false)
+    table["."]  = KeyMapping(keyCode: 0x2F, flags: [], isModifier: false)
+    table["/"]  = KeyMapping(keyCode: 0x2C, flags: [], isModifier: false)
+    table["`"]  = KeyMapping(keyCode: 0x32, flags: [], isModifier: false)
 
     return table
 }()
@@ -130,7 +125,6 @@ let keyTable: [String: KeyMapping] = {
 // MARK: - 配置加载
 
 func loadConfig() -> Config {
-    // 按优先级查找配置文件：当前工作目录 → 可执行文件同目录 → ~/.config
     let cwd = FileManager.default.currentDirectoryPath + "/config.json"
     let execDir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
         .appendingPathComponent("config.json").path
@@ -152,9 +146,9 @@ func loadConfig() -> Config {
         }
     }
 
-    print("✗ 未找到配置文件，使用默认配置（侧键后=Command, 侧键前=回车）")
+    print("✗ 未找到配置文件，使用默认配置（侧键后=回车, 侧键前=fn）")
     return Config(mappings: [
-        Mapping(button: 3, key: "left_command", action: "hold"),
-        Mapping(button: 4, key: "return", action: "click"),
+        Mapping(button: 3, key: "return", action: "click"),
+        Mapping(button: 4, key: "fn", action: "hold"),
     ])
 }
